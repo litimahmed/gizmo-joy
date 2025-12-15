@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -24,35 +23,85 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Target,
-  Zap,
-  AlertCircle
+  Zap
 } from "lucide-react";
 import { ResponsiveLine } from "@nivo/line";
 import { ResponsiveBar } from "@nivo/bar";
 import { ResponsivePie } from "@nivo/pie";
 import { useAdminTranslation } from "@/contexts/AdminTranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useMemo, useState } from "react";
-import { useAnalyticsData } from "@/hooks/admin/useAnalytics";
-import { LucideIcon } from "lucide-react";
+import { useMemo } from "react";
 
-// Icon mapping for dynamic icon rendering
-const iconMap: Record<string, LucideIcon> = {
-  Users,
-  Clock,
-  Zap,
-  Target,
-};
+// Sample data for Nivo charts
+const weeklyLineData = [
+  {
+    id: "customers",
+    data: [
+      { x: "Lun", y: 120 },
+      { x: "Mar", y: 145 },
+      { x: "Mer", y: 168 },
+      { x: "Jeu", y: 152 },
+      { x: "Ven", y: 189 },
+      { x: "Sam", y: 210 },
+      { x: "Dim", y: 95 },
+    ]
+  }
+];
 
-const getIcon = (iconType: string): LucideIcon => {
-  return iconMap[iconType] || Activity;
-};
+const efficiencyLineData = [
+  {
+    id: "efficiency",
+    data: [
+      { x: "Lun", y: 92 },
+      { x: "Mar", y: 94 },
+      { x: "Mer", y: 89 },
+      { x: "Jeu", y: 96 },
+      { x: "Ven", y: 85 },
+      { x: "Sam", y: 78 },
+      { x: "Dim", y: 98 },
+    ]
+  }
+];
+
+const hourlyBarData = [
+  { hour: "8h", customers: 12 },
+  { hour: "9h", customers: 28 },
+  { hour: "10h", customers: 45 },
+  { hour: "11h", customers: 52 },
+  { hour: "12h", customers: 38 },
+  { hour: "13h", customers: 42 },
+  { hour: "14h", customers: 58 },
+  { hour: "15h", customers: 62 },
+  { hour: "16h", customers: 48 },
+  { hour: "17h", customers: 35 },
+  { hour: "18h", customers: 22 },
+];
+
+const queueDistributionPie = [
+  { id: "Bureau d'accueil", label: "Bureau d'accueil", value: 35 },
+  { id: "Support technique", label: "Support technique", value: 25 },
+  { id: "Réception", label: "Réception", value: 20 },
+  { id: "Service VIP", label: "Service VIP", value: 12 },
+  { id: "Autres", label: "Autres", value: 8 },
+];
+
+const monthlyTrendData = [
+  {
+    id: "served",
+    data: [
+      { x: "Jan", y: 2840 },
+      { x: "Fév", y: 3120 },
+      { x: "Mar", y: 3580 },
+      { x: "Avr", y: 3420 },
+      { x: "Mai", y: 3890 },
+      { x: "Juin", y: 4250 },
+    ]
+  }
+];
 
 function AnalyticsContent() {
   const { t } = useAdminTranslation();
   const { accentColor, isDark } = useTheme();
-  const [period, setPeriod] = useState('30d');
-  const { data, isLoading, error, refetch } = useAnalyticsData(period);
 
   // Create a unique key that changes when theme or accent changes
   const themeKey = `${accentColor}-${isDark ? 'dark' : 'light'}`;
@@ -135,7 +184,7 @@ function AnalyticsContent() {
       mutedColor: muted,
       ringColor: ring
     };
-  }, [themeKey]);
+  }, [themeKey]); // Recalculate when theme changes
 
   // Generate pie chart colors based on theme
   const pieColors = useMemo(() => [
@@ -146,61 +195,40 @@ function AnalyticsContent() {
     mutedColor
   ], [primaryColor, accentColorValue, secondaryColor, ringColor, mutedColor]);
 
-  // Loading skeleton
-  if (isLoading) {
-    return (
-      <div className="space-y-8 animate-fade-in">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <Skeleton className="h-10 w-48 mb-2" />
-            <Skeleton className="h-5 w-72" />
-          </div>
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-10 w-40" />
-            <Skeleton className="h-10 w-24" />
-            <Skeleton className="h-10 w-24" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="border-border/50">
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-20 mb-2" />
-                <Skeleton className="h-4 w-16" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <p className="text-lg font-medium text-foreground">Failed to load analytics data</p>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
-          <Button variant="outline" className="mt-4" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const stats = data?.stats || [];
-  const weeklyLineData = data?.weekly_line_data || [];
-  const efficiencyLineData = data?.efficiency_line_data || [];
-  const hourlyBarData = data?.hourly_bar_data || [];
-  const queueDistributionPie = data?.queue_distribution_pie || [];
-  const monthlyTrendData = data?.monthly_trend_data || [];
+  const stats = [
+    {
+      title: t.totalServed,
+      value: "12 847",
+      change: "+18,2%",
+      trend: "up",
+      icon: Users,
+      description: t.thisMonth
+    },
+    {
+      title: t.avgWaitTime,
+      value: "6,4m",
+      change: "-2,1m",
+      trend: "down",
+      icon: Clock,
+      description: t.vsLastMonth
+    },
+    {
+      title: t.efficiencyRate,
+      value: "94,7%",
+      change: "+5,3%",
+      trend: "up",
+      icon: Zap,
+      description: t.serviceEfficiency
+    },
+    {
+      title: t.satisfaction,
+      value: "4,7/5,0",
+      change: "+0,3",
+      trend: "up",
+      icon: Target,
+      description: t.customerRating
+    },
+  ];
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -211,7 +239,7 @@ function AnalyticsContent() {
           <p className="text-muted-foreground text-lg">{t.analyticsDescription}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={setPeriod}>
+          <Select defaultValue="30d">
             <SelectTrigger className="w-[160px]">
               <Calendar className="h-4 w-4 mr-2" />
               <SelectValue placeholder={t.period} />
@@ -223,7 +251,7 @@ function AnalyticsContent() {
               <SelectItem value="1y">{t.lastYear}</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" className="gap-2">
             <RefreshCw className="h-4 w-4" />
             {t.refresh}
           </Button>
@@ -236,41 +264,38 @@ function AnalyticsContent() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
-          const IconComponent = getIcon(stat.icon_type);
-          return (
-            <Card 
-              key={stat.title} 
-              className="hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30 animate-scale-in"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <IconComponent className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-baseline justify-between">
-                  <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                  <div className={`flex items-center gap-1 text-sm font-medium ${
-                    stat.trend === 'up' ? 'text-primary' : 'text-destructive'
-                  }`}>
-                    {stat.trend === 'up' ? (
-                      <ArrowUpRight className="h-4 w-4" />
-                    ) : (
-                      <ArrowDownRight className="h-4 w-4" />
-                    )}
-                    {stat.change}
-                  </div>
+        {stats.map((stat, index) => (
+          <Card 
+            key={stat.title} 
+            className="hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30 animate-scale-in"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {stat.title}
+              </CardTitle>
+              <stat.icon className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline justify-between">
+                <div className="text-3xl font-bold text-foreground">{stat.value}</div>
+                <div className={`flex items-center gap-1 text-sm font-medium ${
+                  stat.trend === 'up' ? 'text-primary' : 'text-destructive'
+                }`}>
+                  {stat.trend === 'up' ? (
+                    <ArrowUpRight className="h-4 w-4" />
+                  ) : (
+                    <ArrowDownRight className="h-4 w-4" />
+                  )}
+                  {stat.change}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {stat.description}
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {stat.description}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Main Charts Section */}
